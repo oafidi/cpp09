@@ -5,6 +5,7 @@
 # include <fstream>
 # include <climits>
 # include <cstdlib>
+# include <cctype>
 # include <map>
 
 class BitcoinExchange
@@ -16,6 +17,8 @@ class BitcoinExchange
         std::string trim(const std::string &str);
         void isValidDate(const std::string &date);
         void isValidNbr(const std::string &nbr, bool maxIntCheck);
+        bool isHeader(const std::string &line);
+        void processLine(const std::string &line);
 
     public:
         BitcoinExchange();

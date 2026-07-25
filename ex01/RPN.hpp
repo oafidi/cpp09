@@ -2,6 +2,9 @@
 # define RPN_HPP
 
 # include <iostream>
+# include <sstream>
+# include <iomanip>
+# include <cctype>
 # include <stack>
 
 class RPN
@@ -11,7 +14,6 @@ class RPN
         ~RPN();
         RPN(const RPN& other);
         RPN& operator=(const RPN& other);
-        static std::string removeWhitespaces(const std::string& str);
         static double calculate(double a, double b, char c);
     public:
         class InvalidInputException : public std::exception
