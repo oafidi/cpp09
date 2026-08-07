@@ -46,7 +46,7 @@ void BitcoinExchange::isValidDate(const std::string &date)
     {
         if (i == 4 || i == 7)
             continue;
-        if (!std::isdigit(static_cast<unsigned char>(date[i])))
+        if (!std::isdigit(static_cast<int>(date[i])))
             throw InvalidFileException("Error: Invalid date format => " + date);
     }
 
@@ -116,28 +116,27 @@ void BitcoinExchange::loadExchangeRates()
     if (std::getline(file, line))
     {
         size_t commaPos = line.find(',');
-        if (commaPos != std::string::npos)
+        std::string col1 = line.substr(0, commaPos);
+        std::string col2 = line.substr(commaPos + 1);
+        if (trim(col1) != "date" || trim(col2) != "exchange_rate")
         {
-            std::string col1 = line.substr(0, commaPos);
-            std::string col2 = line.substr(commaPos + 1);
-            if (trim(col1) != "date" || trim(col2) != "exchange_rate")
-            {
-                throw InvalidFileException("Error: Invalid header in exchange rates file data.csv");
-            }
+            throw InvalidFileException("Error: Invalid header in exchange rates file data.csv");
         }
+    }
+    else
+    {
+        if (file.bad())
+            throw InvalidFileException("Error: Could not open exchange rates file data.csv");
     }
     while (std::getline(file, line))
     {
         size_t commaPos = line.find(',');
-        if (commaPos != std::string::npos)
-        {
-            std::string date = trim(line.substr(0, commaPos));
-            std::string rateStr = trim(line.substr(commaPos + 1));
-            isValidDate(date);
-            isValidNbr(rateStr, true);
-            double rate = std::strtod(rateStr.c_str(), NULL);
-            exchangeRates[date] = rate;
-        }
+        std::string date = trim(line.substr(0, commaPos));
+        std::string rateStr = trim(line.substr(commaPos + 1));
+        isValidDate(date);
+        isValidNbr(rateStr, true);
+        double rate = std::strtod(rateStr.c_str(), NULL);
+        exchangeRates[date] = rate;
     }
 }
 
@@ -207,8 +206,6 @@ void BitcoinExchange::processInputFile()
     std::string line;
     if (!std::getline(file, line))
     {
-        // A directory opens successfully but fails on read (badbit); an empty
-        // file only sets eofbit and simply has nothing to process.
         if (file.bad())
             std::cerr << "Error: could not open file." << std::endl;
         return;
