@@ -44,8 +44,6 @@ void RPN::calculate(const std::string& expression)
     std::string token;
     bool empty = true;
 
-    // Tokens are split on whitespace, so every token must be exactly one
-    // character: joined operands such as "89" or "12" are rejected.
     while (stream >> token)
     {
         empty = false;
@@ -53,7 +51,7 @@ void RPN::calculate(const std::string& expression)
             throw InvalidInputException("Error");
 
         char c = token[0];
-        if (std::isdigit(static_cast<unsigned char>(c)))
+        if (std::isdigit(static_cast<int>(c)))
         {
             operands.push(c - '0');
         }
