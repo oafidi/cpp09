@@ -67,11 +67,10 @@ void BitcoinExchange::isValidDate(const std::string &date)
     }
 }
 
-void BitcoinExchange::isValidNbr(const std::string &nbr, bool maxIntCheck)
+void BitcoinExchange::isValidNbr(const std::string &nbr, double &rate, bool maxIntCheck)
 {
     bool hasPoint = false;
     bool hasDigit = false;
-    double value = 0.0;
     size_t i = 0;
 
     if (nbr[i] == '-')
@@ -86,7 +85,7 @@ void BitcoinExchange::isValidNbr(const std::string &nbr, bool maxIntCheck)
                 throw InvalidFileException("Error: Invalid number format => " + nbr);
             hasPoint = true;
         }
-        else if (std::isdigit(static_cast<unsigned char>(nbr[i])))
+        else if (std::isdigit(static_cast<int>(nbr[i])))
         {
             hasDigit = true;
         }
@@ -97,15 +96,17 @@ void BitcoinExchange::isValidNbr(const std::string &nbr, bool maxIntCheck)
     }
     if (!hasDigit)
         throw InvalidFileException("Error: Invalid number format.");
-    value = std::strtod(nbr.c_str(), NULL);
-    if (maxIntCheck && (value < 0 || value > INT_MAX))
+    rate = std::strtod(nbr.c_str(), NULL);
+    if (maxIntCheck && (rate < 0 || rate > INT_MAX))
         throw InvalidFileException("Error: too large a number.");
-    else if (!maxIntCheck && (value < 0 || value > 1000))
+    else if (!maxIntCheck && (rate < 0 || rate > 1000))
         throw InvalidFileException("Error: too large a number.");
 }
 
 void BitcoinExchange::loadExchangeRates()
 {
+    double rate = 0;
+
     std::ifstream file("data.csv");
     if (!file.is_open())
     {
@@ -127,31 +128,25 @@ void BitcoinExchange::loadExchangeRates()
     {
         if (file.bad())
             throw InvalidFileException("Error: Could not open exchange rates file data.csv");
+        if (file.peek() == -1)
+            throw InvalidFileException("Error: exchange rates file data.csv is empty");
     }
     while (std::getline(file, line))
     {
+        if (trim(line).empty())
+            continue;
         size_t commaPos = line.find(',');
         std::string date = trim(line.substr(0, commaPos));
         std::string rateStr = trim(line.substr(commaPos + 1));
         isValidDate(date);
-        isValidNbr(rateStr, true);
-        double rate = std::strtod(rateStr.c_str(), NULL);
+        isValidNbr(rateStr, rate, true);
         exchangeRates[date] = rate;
     }
 }
 
-
-bool BitcoinExchange::isHeader(const std::string &line)
-{
-    size_t pipePos = line.find('|');
-    if (pipePos == std::string::npos)
-        return false;
-    return trim(line.substr(0, pipePos)) == "date"
-        && trim(line.substr(pipePos + 1)) == "value";
-}
-
 void BitcoinExchange::processLine(const std::string &line)
 {
+    double value = 0;
     size_t pipePos = line.find('|');
     if (pipePos == std::string::npos)
     {
@@ -164,8 +159,7 @@ void BitcoinExchange::processLine(const std::string &line)
     try
     {
         isValidDate(date);
-        isValidNbr(valueStr, false);
-        double value = std::strtod(valueStr.c_str(), NULL);
+        isValidNbr(valueStr, value, false);
         std::map<std::string, double>::const_iterator it = exchangeRates.lower_bound(date);
         if (it == exchangeRates.end() || it->first != date)
         {
@@ -184,34 +178,44 @@ void BitcoinExchange::processLine(const std::string &line)
     }
 }
 
-void BitcoinExchange::processInputFile()
+void BitcoinExchange::readInputFile()
 {
     std::ifstream file(inputFile.c_str());
     if (!file.is_open())
-    {
-        std::cerr << "Error: could not open file." << std::endl;
-        return;
-    }
+        throw InvalidFileException("Error: could not open file.");
 
+    std::string line;
+    if (std::getline(file, line))
+    {
+        size_t commaPos = line.find('|');
+        std::string col1 = line.substr(0, commaPos);
+        std::string col2 = line.substr(commaPos + 1);
+        if (trim(col1) != "date" || trim(col2) != "value")
+        {
+            throw InvalidFileException("Error: Invalid header in input file");
+        }
+    }
+    else
+    {
+        if (file.bad())
+            throw InvalidFileException("Error: Could not open input file");
+        if (file.peek() == -1)
+            throw InvalidFileException("Error: input file is empty");
+    }
+    while (std::getline(file, line))
+        processLine(line);
+}
+
+void BitcoinExchange::processInputFile()
+{
     try
     {
         loadExchangeRates();
+        readInputFile();
     }
-    catch (const InvalidFileException& e)
+    catch (const std::exception& e)
     {
         std::cerr << e.what() << std::endl;
         return;
     }
-
-    std::string line;
-    if (!std::getline(file, line))
-    {
-        if (file.bad())
-            std::cerr << "Error: could not open file." << std::endl;
-        return;
-    }
-    if (!isHeader(line))
-        processLine(line);
-    while (std::getline(file, line))
-        processLine(line);
 }
