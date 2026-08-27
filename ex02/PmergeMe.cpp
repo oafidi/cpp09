@@ -68,7 +68,7 @@ std::vector<size_t> PmergeMe::jacobsthalOrder(size_t pairCount)
     std::vector<size_t> jac;
     jac.push_back(0);
     jac.push_back(1);
-    while (jac.back() <= pairCount * 2 + 4)
+    while (jac.back() <= pairCount)
         jac.push_back(jac[jac.size() - 1] + 2 * jac[jac.size() - 2]);
 
     size_t prev = 1;
