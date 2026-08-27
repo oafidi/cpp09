@@ -81,30 +81,48 @@ class PmergeMe
 
             mergeInsertSort(bigs, totalCount);
 
+            std::vector<size_t> pairOfTag(totalCount);
+            for (size_t i = 0; i < pairs.size(); i++)
+                pairOfTag[pairs[i].first.tag] = i;
+
+            std::vector<std::pair<Elem, Elem> > orderedPairs;
+            for (size_t i = 0; i < bigs.size(); i++)
+                orderedPairs.push_back(pairs[pairOfTag[bigs[i].tag]]);
+
             std::vector<size_t> posOf(totalCount);
             for (size_t k = 0; k < bigs.size(); k++)
                 posOf[bigs[k].tag] = k;
 
-            std::vector<size_t> order = jacobsthalOrder(pairs.size());
+            size_t pendingCount = orderedPairs.size() + (hasOdd ? 1 : 0);
+            std::vector<size_t> order = jacobsthalOrder(pendingCount);
 
             for (size_t oi = 0; oi < order.size(); oi++)
             {
-                size_t pairIdx = order[oi] - 1;
-                size_t partnerTag = pairs[pairIdx].first.tag;
-                size_t bound = posOf[partnerTag];
+                size_t pendingIdx = order[oi] - 1;
+                Elem value;
+                size_t bound;
 
-                size_t insPos = lowerBoundInsert(bigs, bound, pairs[pairIdx].second);
-
-                for (size_t j = 0; j < pairs.size(); j++)
+                if (pendingIdx < orderedPairs.size())
                 {
-                    size_t t = pairs[j].first.tag;
+                    size_t partnerTag = orderedPairs[pendingIdx].first.tag;
+                    value = orderedPairs[pendingIdx].second;
+                    bound = posOf[partnerTag];
+                }
+                else
+                {
+                    value = oddOne;
+                    bound = bigs.size();
+                }
+
+                size_t insPos = lowerBoundInsert(bigs, bound, value);
+
+                for (size_t j = 0; j < orderedPairs.size(); j++)
+                {
+                    size_t t = orderedPairs[j].first.tag;
                     if (posOf[t] >= insPos)
                         posOf[t] += 1;
                 }
             }
-
-            if (hasOdd)
-                lowerBoundInsert(bigs, bigs.size(), oddOne);
 
             chain = bigs;
         }
