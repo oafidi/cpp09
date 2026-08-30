@@ -9,7 +9,5 @@ int main(int argc, char **argv)
     }
 
     BitcoinExchange btc(argv[1]);
-    btc.processInputFile();
-    
-    return 0;
+    return (btc.processInputFile());
 }

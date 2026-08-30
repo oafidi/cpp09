@@ -8,11 +8,12 @@
 # include <climits>
 # include <cerrno>
 # include <cstdlib>
+# include <sys/time.h>
 
 class PmergeMe
 {
     private:
-        struct Elem
+        struct Element
         {
             int value;
             size_t tag;
@@ -23,109 +24,18 @@ class PmergeMe
 
         void isValidNbr(const std::string &nbr, unsigned long &n);
 
-        static std::vector<size_t> jacobsthalOrder(size_t pairCount);
+        static std::vector<size_t> jacobsthalOrderVector(size_t pendingCount);
+        static std::deque<size_t> jacobsthalOrderDeque(size_t pendingCount);
 
+        size_t lowerBoundInsertVector(std::vector<Element> &chain,
+                    size_t chainSize, Element value);
+        size_t lowerBoundInsertDeque(std::deque<Element> &chain,
+                    size_t chainSize, Element value);
 
-        template <typename Container>
-        size_t lowerBoundInsert(Container &chain, size_t chainSize, Elem value)
-        {
-            long low = 0;
-            long high = static_cast<long>(chainSize) - 1;
-            long res = static_cast<long>(chainSize);
-
-            while (low <= high)
-            {
-                long mid = low + (high - low) / 2;
-
-                if (chain[mid].value >= value.value)
-                {
-                    high = mid - 1;
-                    res = mid;
-                }
-                else
-                {
-                    low = mid + 1;
-                }
-            }
-            chain.insert(chain.begin() + res, value);
-            return static_cast<size_t>(res);
-        }
-
-        template <typename Container>
-        void mergeInsertSort(Container &chain, size_t totalCount)
-        {
-            if (chain.size() <= 1)
-                return;
-
-            bool hasOdd = (chain.size() % 2 == 1);
-            Elem oddOne;
-            if (hasOdd)
-                oddOne = chain.back();
-
-            std::vector<std::pair<Elem, Elem> > pairs;
-            size_t pairCount = chain.size() / 2;
-
-            for (size_t i = 0; i < pairCount; i++)
-            {
-                Elem a = chain[2 * i];
-                Elem b = chain[2 * i + 1];
-                if (a.value >= b.value)
-                    pairs.push_back(std::make_pair(a, b));
-                else
-                    pairs.push_back(std::make_pair(b, a));
-            }
-
-            Container bigs;
-            for (size_t i = 0; i < pairs.size(); i++)
-                bigs.push_back(pairs[i].first);
-
-            mergeInsertSort(bigs, totalCount);
-
-            std::vector<size_t> pairOfTag(totalCount);
-            for (size_t i = 0; i < pairs.size(); i++)
-                pairOfTag[pairs[i].first.tag] = i;
-
-            std::vector<std::pair<Elem, Elem> > orderedPairs;
-            for (size_t i = 0; i < bigs.size(); i++)
-                orderedPairs.push_back(pairs[pairOfTag[bigs[i].tag]]);
-
-            std::vector<size_t> posOf(totalCount);
-            for (size_t k = 0; k < bigs.size(); k++)
-                posOf[bigs[k].tag] = k;
-
-            size_t pendingCount = orderedPairs.size() + (hasOdd ? 1 : 0);
-            std::vector<size_t> order = jacobsthalOrder(pendingCount);
-
-            for (size_t oi = 0; oi < order.size(); oi++)
-            {
-                size_t pendingIdx = order[oi] - 1;
-                Elem value;
-                size_t bound;
-
-                if (pendingIdx < orderedPairs.size())
-                {
-                    size_t partnerTag = orderedPairs[pendingIdx].first.tag;
-                    value = orderedPairs[pendingIdx].second;
-                    bound = posOf[partnerTag];
-                }
-                else
-                {
-                    value = oddOne;
-                    bound = bigs.size();
-                }
-
-                size_t insPos = lowerBoundInsert(bigs, bound, value);
-
-                for (size_t j = 0; j < orderedPairs.size(); j++)
-                {
-                    size_t t = orderedPairs[j].first.tag;
-                    if (posOf[t] >= insPos)
-                        posOf[t] += 1;
-                }
-            }
-
-            chain = bigs;
-        }
+        void mergeInsertSortVector(std::vector<Element> &chain,
+                    size_t totalCount);
+        void mergeInsertSortDeque(std::deque<Element> &chain,
+                    size_t totalCount);
 
         void sortVector();
         void sortDeque();

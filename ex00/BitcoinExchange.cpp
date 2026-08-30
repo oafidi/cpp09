@@ -73,6 +73,8 @@ void BitcoinExchange::isValidNbr(const std::string &nbr, double &rate, bool maxI
     bool hasDigit = false;
     size_t i = 0;
 
+    if (nbr.empty())
+        throw InvalidFileException("Error: Invalid number format.");
     if (nbr[i] == '-')
         throw InvalidFileException("Error: not a positive number.");
     if (nbr[i] == '+')
@@ -206,7 +208,7 @@ void BitcoinExchange::readInputFile()
         processLine(line);
 }
 
-void BitcoinExchange::processInputFile()
+int BitcoinExchange::processInputFile()
 {
     try
     {
@@ -216,6 +218,7 @@ void BitcoinExchange::processInputFile()
     catch (const std::exception& e)
     {
         std::cerr << e.what() << std::endl;
-        return;
+        return 1;
     }
+    return 0;
 }

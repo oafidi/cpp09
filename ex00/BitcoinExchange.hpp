@@ -36,7 +36,7 @@ class BitcoinExchange
                 const char* what() const throw();
         };
 
-        void processInputFile();
+        int processInputFile();
 };
 
 #endif
